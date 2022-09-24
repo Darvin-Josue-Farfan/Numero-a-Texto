@@ -1,118 +1,208 @@
 <?php
 
+/**
+ * 
+ * ===== CONVERTIR NÚMERO A TEXTO ====
+ * 
+ * La presente clase transforma un número entero a su equivalente en palabras.
+ * Permite un rango de trabajo desde 0 hasta 10^126-1, o sea, 126 dígitos.
+ * 
+ * requiere PHP >= 7.1
+ * 
+ * @date 2022-09-24
+ * @version 1.0
+ * @author Darvin Farfan <darvinjosuefarfanlinarez@gmail.com>
+ * @license MIT
+ * 
+ */
+
+
 class NumberToText
 {
+    
+    private const units            =   [
+                                        "mil", "millón", "billón",
+                                        "trillón", "cuatrillón", "quintillón",
+                                        "sextillón", "septillón", "octillón",
+                                        "nonillón", "decillón", "undecillón",
+                                        "duodecillón", "tredecillón", "cuatordecillón",
+                                        "quindecillón", "sexdecillón", "septendecillón",
+                                        "octodecillón", "novendecillón", "vigintillón"
+                                    ];
 
-    private $units              =   [
-        "mil", "millón", "billón",
-        "trillón", "cuatrillón", "quintillón",
-        "sextillón", "septillón", "octillón",
-        "nonillón", "decillón", "undecillón",
-        "duodecillón", "tredecillón", "cuatordecillón",
-        "quindecillón", "sexdecillón", "septendecillón",
-        "octodecillón", "novendecillón", "vigintillón"
-    ];
+    private const ones             =   ["cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"];
 
-    private $ones               =   ["cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"];
+    private const ones_acute       =   [1 => "ún", "dós", "trés", 6 => "séis"];
 
-    private $ones_acute         =   [1 => "ún", "dós", "trés", 6 => "séis"];
+    private const tens             =   [1 => "diez", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"];
+    private const ten_with_units   =   ["diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve"];
 
-    private $tens               =   [1 => "diez", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"];
-    private $ten_with_units     =   ["diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve"];
+    private const hundreds         =   [1 => "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
+    private const hundreds_female  =   [1 => "ciento", "doscientas", "trescientas", "cuatrocientas", "quinientas", "seiscientas", "setecientas", "ochocientas", "novecientas"];
 
-    private $hundreds           =   [1 => "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
-    private $hundreds_female    =   [1 => "ciento", "doscientas", "trescientas", "cuatrocientas", "quinientas", "seiscientas", "setecientas", "ochocientas", "novecientas"];
+    private const max_length            =   126;
 
-    private $number;
-    private $number_text        =   false;
+    private string      $number;
+    private string|bool $number_text    =   false;
 
-    private $female_mode        =   false;
-    private $apocope_mode       =   false;
+    private bool $female_mode           =   false;
+    private bool $apocope_mode          =   false;
 
-    function __construct($stringNumber = false, $femaleMode = false, $apocopeMode = false)
+    
+    /**
+     * __construct
+     *
+     * @param  string|bool $stringNumber
+     * @param  bool $femaleMode
+     * @param  bool $apocopeMode
+     * @return void
+     */
+    function __construct(string|bool $stringNumber = false, bool $femaleMode = false, bool $apocopeMode = false)
     {
-        if ($stringNumber !== false && !preg_match("/^[0-9]{1,126}$/", $stringNumber))
-            throw new ParseError('Wrong parameter');
-
-        if (!is_bool($femaleMode))
-            throw new ParseError('Wrong parameter');
-
-        if (!is_bool($apocopeMode))
+        if ($stringNumber !== false && !preg_match(sprintf("/^[0-9]{1,%s}$/", $this::max_length), $stringNumber))
             throw new ParseError('Wrong parameter');
 
         $this->number = $stringNumber;
         $this->female_mode = $femaleMode;
         $this->apocope_mode = $apocopeMode;
     }
+    
 
-    function setNumber($stringNumber)
+    /**
+     * setNumber
+     *
+     * @param  string|int $stringNumber
+     * @return void
+     */
+    function setNumber(string|int $stringNumber)
     {
-        if (!preg_match("/^[0-9]{1,126}$/", $stringNumber))
+        if (!preg_match(sprintf("/^[0-9]{1,%s}$/", $this::max_length), $stringNumber))
             throw new ParseError('Wrong parameter');
 
         $this->number = $stringNumber;
         $this->number_text = false;
     }
+    
 
+    /**
+     * femaleMode
+     *
+     * @return void
+     */
     function femaleMode()
     {
         $this->female_mode = true;
     }
+    
 
+    /**
+     * maleMode
+     *
+     * @return void
+     */
     function maleMode()
     {
         $this->female_mode = false;
     }
+    
 
-    function setApocopeMode($apocopeMode)
+    /**
+     * setApocopeMode
+     *
+     * @param  bool $apocopeMode
+     * @return void
+     */
+    function setApocopeMode(bool $apocopeMode)
     {
-        if (!is_bool($apocopeMode))
-            throw new ParseError('Wrong parameter');
-
         $this->apocope_mode = $apocopeMode;
     }
 
-    function getText()
+
+    /**
+     * getText
+     *
+     * @return string
+     */
+    function getText():string
     {
         if ($this->number_text === false)
             $this->processText();
 
         return $this->number_text;
     }
+    
 
-    private function isEven($number)
+    /**
+     * isEven
+     *
+     * @param  string|int $number
+     * @return bool
+     */
+    private function isEven(string|int $number):bool
     {
         return (($number % 2) == 0);
     }
+    
 
-    private function isOdd($number)
+    /**
+     * isOdd
+     *
+     * @param  string|int $number
+     * @return bool
+     */
+    private function isOdd(string|int $number):bool
     {
         return (($number % 2) != 0);
     }
+    
 
-    private function getUnits($group_index, $units_plural = false)
+    /**
+     * getUnits
+     *
+     * @param  string|int $group_index
+     * @param  bool|int $units_plural
+     * @return string
+     */
+    private function getUnits(string|int $group_index, bool|int $units_plural = false):string
     {
         if ($group_index == 0)             return "";
-        if ($this->isOdd($group_index))    return $this->units[0];
-        if ($units_plural === false)       return $this->units[$group_index / 2];
+        if ($this->isOdd($group_index))    return $this::units[0];
+        if ($units_plural === false)       return $this::units[$group_index / 2];
 
-        return str_replace("ó", "o", $this->units[$group_index / 2]) . "es";
+        return str_replace("ó", "o", $this::units[$group_index / 2]) . "es";
     }
+    
 
-    private function getOnes($number, $acute = false, $unit = 0)
+    /**
+     * getOnes
+     *
+     * @param  string|int $number
+     * @param  bool $acute
+     * @param  int $unit
+     * @return string
+     */
+    private function getOnes(string|int $number, bool $acute = false, int $unit = 0):string
     {
-        if ($acute && in_array($number, array_keys($this->ones_acute)))
-            return $this->ones_acute[$number];
+        if ($acute && in_array($number, array_keys($this::ones_acute)))
+            return $this::ones_acute[$number];
 
         if ($this->female_mode && $number == 1 && $unit == 0) return "una";
 
-        return $this->ones[$number];
+        return $this::ones[$number];
     }
+    
 
-    private function getTens($number, $unitAcuteForTwenty = false)
+    /**
+     * getTens
+     *
+     * @param  string|int $number
+     * @param  bool|int $unitAcuteForTwenty
+     * @return string
+     */
+    private function getTens(string|int $number, bool|int $unitAcuteForTwenty = false):string
     {
-        if ($number[0] == 1) return $this->ten_with_units[$number[1]];
-        if ($number[1] == 0) return $this->tens[$number[0]];
+        if ($number[0] == 1) return $this::ten_with_units[$number[1]];
+        if ($number[1] == 0) return $this::tens[$number[0]];
         if ($number[0] == 2) {
             if ($number[1] == 1 && !$unitAcuteForTwenty)
                 return "veinti" . ($this->female_mode && $unitAcuteForTwenty < 1 ? "una" : "uno");
@@ -120,15 +210,34 @@ class NumberToText
             return sprintf("veinti%s", $this->getOnes($number[1], true));
         }
 
-        return sprintf("%s y %s", $this->tens[$number[0]], $this->getOnes($number[1]));
+        return sprintf("%s y %s", $this::tens[$number[0]], $this->getOnes($number[1]));
     }
 
-    private function getUnitGroup($current_group, $array_group)
+
+    /**
+     * getUnitGroup
+     *
+     * @param  int $current_group
+     * @param  array $array_group
+     * @return int
+     */
+    private function getUnitGroup(int $current_group, array $array_group):int
     {
         return count($array_group) - $current_group + 1;
     }
 
-    private function textGroups($group, $array_group, $current_group, $unit, $realUnit = false)
+
+    /**
+     * textGroups
+     *
+     * @param  string|int $group
+     * @param  array $array_group
+     * @param  int $current_group
+     * @param  int $unit
+     * @param  bool|int $realUnit
+     * @return string
+     */
+    private function textGroups(string|int $group, array $array_group, int $current_group, int $unit, bool|int $realUnit = false):string
     {
         $group = ltrim($group, '0');
 
@@ -143,8 +252,18 @@ class NumberToText
 
         return $this->processGroupHundreds($group, $array_group, $current_group, $unit);
     }
+    
 
-    private function processGroupVoid($group, $array_group, $current_group, $unit)
+    /**
+     * processGroupVoid
+     *
+     * @param  string|int $group
+     * @param  array $array_group
+     * @param  int $current_group
+     * @param  int $unit
+     * @return string
+     */
+    private function processGroupVoid(string|int $group, array $array_group, int $current_group, int $unit):string
     {
         if ($unit == 0 && $current_group == 0) return "cero";
 
@@ -156,8 +275,18 @@ class NumberToText
 
         return "";
     }
+    
 
-    private function processGroupOnes($group, $array_group, $current_group, $unit)
+    /**
+     * processGroupOnes
+     *
+     * @param  string|int $group
+     * @param  array $array_group
+     * @param  int $current_group
+     * @param  int $unit
+     * @return string
+     */
+    private function processGroupOnes(string|int $group, array $array_group, int $current_group, int $unit):string
     {
         $display_unit = $this->getUnits($unit);
         $display_digit = $this->getOnes($group);
@@ -182,8 +311,19 @@ class NumberToText
 
         return sprintf("%s %s", $display_digit, $display_unit);
     }
+    
 
-    private function processGroupTens($group, $array_group, $current_group, $unit, $realUnit = false)
+    /**
+     * processGroupTens
+     *
+     * @param  string|int $group
+     * @param  array $array_group
+     * @param  int $current_group
+     * @param  int $unit
+     * @param  bool|int $realUnit
+     * @return string
+     */
+    private function processGroupTens(string|int $group, array $array_group, int $current_group, int $unit, bool|int $realUnit = false):string
     {
         $display_unit = $this->getUnits($unit, $unit > 1);
 
@@ -197,18 +337,28 @@ class NumberToText
 
         return sprintf("%s %s", $this->getTens($group, $unit), $display_unit);
     }
+    
 
-    private function processGroupHundreds($group, $array_group, $current_group, $unit)
+    /**
+     * processGroupHundreds
+     *
+     * @param  string|int $group
+     * @param  array $array_group
+     * @param  int $current_group
+     * @param  int $unit
+     * @return string
+     */
+    private function processGroupHundreds(string|int $group, array $array_group, int $current_group, int $unit):string
     {
         $display_unit = $this->getUnits($unit, $unit > 1);
         $display_digit_one = $unit <= 0 ? "uno" : "un";
-        $display_digit_hundred = $this->hundreds[$group[0]];
+        $display_digit_hundred = $this::hundreds[$group[0]];
 
         $only_tens = $group - ($group[0] * 100);
 
         if ($this->female_mode) {
 
-            $display_digit_hundred = $this->hundreds_female[$group[0]];
+            $display_digit_hundred = $this::hundreds_female[$group[0]];
 
             if ($unit <= 0)
                 $display_digit_one = "una";
@@ -235,7 +385,13 @@ class NumberToText
         $subGroup = $this->textGroups($only_tens, $array_group, count($array_group) - 1, 0, $unit);
         return sprintf("%s %s %s", $display_digit_hundred, $subGroup, $display_unit);
     }
+    
 
+    /**
+     * processText
+     *
+     * @return void
+     */
     private function processText()
     {
         if ($this->number === false)
