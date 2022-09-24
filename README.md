@@ -1,2 +1,2 @@
 # Numero-a-Texto
-Convierte un número entero a texto
+Clase de PHP para convertir un número entero a texto
